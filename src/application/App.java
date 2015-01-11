@@ -1,17 +1,18 @@
 package application;
 
-import java.awt.*;
+import java.awt.EventQueue;
 
 import javax.swing.UIManager;
 
 public class App
 {
-    private AppFrame appFrame;
+    private static AppFrame appFrame;
+    private static AppLogic appLogic;
     private Thread appLogicThread;
 
-    public App() {
-        EventQueue.invokeLater(new Runnable()
-        {
+    public App()
+    {
+        EventQueue.invokeLater(new Runnable() {
             public void run() {
                 appFrame = new AppFrame();
                 appFrame.setVisible(true);
@@ -20,7 +21,7 @@ public class App
 
         appLogicThread = new Thread(new Runnable() {
             public void run() {
-                new AppLogic();
+            	appLogic = new AppLogic();
             }
         });
 
@@ -36,5 +37,15 @@ public class App
         }
         
         new App();
+    }
+    
+    public static AppFrame getFrame()
+    {
+    	return appFrame;
+    }
+    
+    public static AppLogic getLogic()
+    {
+    	return appLogic;
     }
 }

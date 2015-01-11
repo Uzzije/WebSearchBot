@@ -1,23 +1,44 @@
 package application;
 
-import java.awt.BorderLayout;
-
 import javax.swing.JFrame;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import javax.swing.JSpinner;
 import javax.swing.border.EmptyBorder;
 import javax.swing.JLabel;
 import javax.swing.JTextField;
 import javax.swing.JButton;
+
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
+
 import javax.swing.JTextPane;
 
-public class AppFrame extends JFrame {
-
-	public AppFrame() {
-		
-		setTitle("Simple example");
+public class AppFrame extends JFrame
+{
+	public static final String BUTTON_START = "start";
+	public static final String BUTTON_RESUME = "resume";
+	public static final String BUTTON_PAUSE = "pause";
+	public static final String BUTTON_STOP = "stop";
+	public static final String BUTTON_SAVE_RESULT = "save_result";
+	
+	private JTextField textFieldKeyword;
+	private JTextField textFieldUrl;
+	
+	private JButton btnStart;
+	private JButton btnResume;
+	private JButton btnPause;
+	private JButton btnStop;
+	private JButton btnSaveResult;
+	
+	private JSpinner spinnerMaxExecutionTime;
+	private JSpinner spinnerAmountOfThreads;
+	
+	private JTextPane logOutput;
+	
+	public AppFrame()
+	{
+		setTitle("Web Search Bot");
 		setSize(500, 500);
         setResizable(false);
         setLocationRelativeTo(null);
@@ -46,64 +67,126 @@ public class AppFrame extends JFrame {
 		mainPanel.add(lblAmountOfThreads);
 		
 		// Inputs
-		JTextField textFieldKeyword = new JTextField();
+		textFieldKeyword = new JTextField();
 		textFieldKeyword.setBounds(161, 8, 323, 20);
 		mainPanel.add(textFieldKeyword);
 		textFieldKeyword.setColumns(10);
 		
-		JTextField textFieldUrl = new JTextField("http://");
+		textFieldUrl = new JTextField("http://");
 		textFieldUrl.setBounds(161, 33, 323, 20);
 		mainPanel.add(textFieldUrl);
 		textFieldUrl.setColumns(10);
 		
-		JSpinner spinnerMaxExcecutionTime = new JSpinner();
-		spinnerMaxExcecutionTime.setBounds(161, 58, 50, 20);
-		spinnerMaxExcecutionTime.setValue(20);
-		mainPanel.add(spinnerMaxExcecutionTime);
+		spinnerMaxExecutionTime = new JSpinner();
+		spinnerMaxExecutionTime.setBounds(161, 58, 50, 20);
+		spinnerMaxExecutionTime.setValue(20);
+		mainPanel.add(spinnerMaxExecutionTime);
 		
-		JSpinner spinnerAmountOfThreads = new JSpinner();
+		spinnerAmountOfThreads = new JSpinner();
 		spinnerAmountOfThreads.setBounds(161, 83, 50, 20);
 		spinnerAmountOfThreads.setValue(2);
 		mainPanel.add(spinnerAmountOfThreads);
 		
 		// Action buttons
-		JButton btnStart = new JButton("Start");
+		btnStart = new JButton("Start");
 		btnStart.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
+				if (!getKeyword().isEmpty()) {
+					if (Helpers.isUrlValid(getUrl())) {
+						if (1 <= getThreadsNumber()) {
+							App.getLogic().start();
+							btnStart.setEnabled(false);
+						} else {
+							log("Validation: It must have at least one thread to execute the bot!");
+						}
+					} else {
+						log("Validation: URL must be valid http protocol link!");
+					}
+				} else {
+					log("Validation: Keyword cannot be empty!");
+				}
 			}
 		});
 		btnStart.setBounds(10, 111, 89, 23);
 		mainPanel.add(btnStart);
 		
-		JButton btnResume = new JButton("Resume");
+		btnResume = new JButton("Resume");
 		btnResume.setBounds(109, 111, 85, 23);
 		btnResume.setEnabled(false);
 		mainPanel.add(btnResume);
 		
-		JButton btnPause = new JButton("Pause");
+		btnPause = new JButton("Pause");
 		btnPause.setBounds(204, 111, 89, 23);
 		btnPause.setEnabled(false);
 		mainPanel.add(btnPause);
 		
-		JButton btnStop = new JButton("Stop");
+		btnStop = new JButton("Stop");
 		btnStop.setBounds(303, 111, 82, 23);
 		btnStop.setEnabled(false);
 		mainPanel.add(btnStop);
 		
-		JButton btnSaveResult = new JButton("Save result");
+		btnSaveResult = new JButton("Save result");
 		btnSaveResult.setBounds(395, 111, 89, 23);
 		btnSaveResult.setEnabled(false);
 		mainPanel.add(btnSaveResult);
 		
 		// Log output
-		JTextPane logOutput = new JTextPane();
-		logOutput.setBounds(10, 145, 474, 300);
+		logOutput = new JTextPane();
 		logOutput.setEditable(false);
-		mainPanel.add(logOutput);
+		logOutput.setText("Info: Application loaded successfully and ready to start.");
+		JScrollPane consoleScroll = new JScrollPane(logOutput);
+		consoleScroll.setBounds(10, 145, 474, 300);
+		mainPanel.add(consoleScroll);
 		
 		// Status
 		JLabel lblStatus = new JLabel("Status: Ready");
 		lblStatus.setBounds(10, 450, 474, 14);
 		mainPanel.add(lblStatus);
+	}
+	
+	public void log(String message)
+	{
+		logOutput.setText(logOutput.getText() + "\n" + message);
+	}
+	
+	public String getUrl()
+	{
+		return textFieldUrl.getText();
+	}
+	
+	public String getKeyword()
+	{
+		return textFieldKeyword.getText();
+	}
+	
+	public int getMaxExecutionTime()
+	{
+		return (int) spinnerMaxExecutionTime.getValue();
+	}
+	
+	public int getThreadsNumber()
+	{
+		return (int) spinnerAmountOfThreads.getValue();
+	}
+	
+	public void setButtonEnabled(String button, boolean enabled)
+	{
+		switch (button) {
+			case BUTTON_START:
+				btnStart.setEnabled(enabled);
+				break;
+			case BUTTON_PAUSE:
+				btnPause.setEnabled(enabled);
+				break;
+			case BUTTON_RESUME:
+				btnResume.setEnabled(enabled);
+				break;
+			case BUTTON_STOP:
+				btnStop.setEnabled(enabled);
+				break;
+			case BUTTON_SAVE_RESULT:
+				btnSaveResult.setEnabled(enabled);
+				break;
+		}
 	}
 }
