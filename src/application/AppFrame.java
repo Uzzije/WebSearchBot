@@ -94,8 +94,8 @@ public class AppFrame extends JFrame
 				if (!getKeyword().isEmpty()) {
 					if (Helpers.isUrlValid(getUrl())) {
 						if (1 <= getThreadsNumber()) {
-							App.getLogic().start();
 							btnStart.setEnabled(false);
+							App.getLogic().start();
 						} else {
 							log("Validation: It must have at least one thread to execute the bot!");
 						}

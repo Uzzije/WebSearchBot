@@ -17,24 +17,32 @@ public class BotThread extends Thread
 		while (true) {
 			String url = urlPool.getNextUrlToCheck();
 			
-			if (null == url) {
-				// Check if there is any working BotThread
-				break;
+			while (null == url) {
+				try {
+					synchronized(App.getLogic()) {
+						App.getLogic().wait();
+					}
+				} catch (InterruptedException e) {}
+
+				url = urlPool.getNextUrlToCheck();
 			}
+
+			String content = Helpers.getUrlContents(url);
+		
+			if (content.contains(App.getFrame().getKeyword())) {
+				urlPool.addUrlAssFound(url);
+			}
+
+			urlPool.markUrlAsChecked(url);
+
+			ArrayList<String> urlsInContent = Helpers.getAllUrlsInString(content);
 			
-			try {
-				String content = Helpers.getUrlContents(url);
+			if (0 < urlsInContent.size()) {
+				urlPool.addUrlToCheck(Helpers.getAllUrlsInString(content));
 				
-				if (content.contains(App.getFrame().getKeyword())) {
-					urlPool.addUrlAssFound(url);
+				synchronized(App.getLogic()) {
+					App.getLogic().notifyAll();
 				}
-	
-				urlPool.markUrlAsChecked(url);
-				
-				ArrayList<String> urlsInContent = null;
-				urlPool.addUrlToCheck(urlsInContent);
-			} catch (UnknownHostException e) {
-				App.getFrame().log("Error: Cannot connect to the Internet!");
 			}
 		}
 	}

@@ -91,4 +91,24 @@ public class UrlPool
 			checkedUrls.add(url);
 		}
 	}
+	
+	/**
+	 * Get total number of checked URLs.
+	 * 
+	 * @return total checked
+	 */
+	public int getTotalCheckedUrl()
+	{
+		return checkedUrls.size();
+	}
+
+	/**
+	 * Get total number URLs where the keyword was found.
+	 * 
+	 * @return total found
+	 */
+	public int getTotalFoundUrl()
+	{
+		return foundUrls.size();
+	}
 }

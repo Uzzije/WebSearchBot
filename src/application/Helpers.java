@@ -2,14 +2,17 @@ package application;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class Helpers
 {
-	public static String getUrlContents(String urlString) throws UnknownHostException
+	public static String getUrlContents(String urlString)
 	{
 		StringBuilder content = new StringBuilder();
 		
@@ -29,7 +32,9 @@ public class Helpers
 			
 			bufferedReader.close();
 		} catch (UnknownHostException e) {
-			throw e;
+			
+		} catch (MalformedURLException e) {
+			
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -37,18 +42,36 @@ public class Helpers
 		return content.toString();
 	}
 	
-	public static boolean isUrlValid(String urlString)
-	{
-		if (7 < urlString.length() && urlString.substring(0, 7).equals("http://")) {
+	public static boolean isUrlValid(String url)
+	{	
+		if (7 < url.length() && url.matches(getValidUrlRegex())) {
 			return true;
 		}
 		
 		return false;
 	}
 	
+	/**
+	 * Get a regular expression to check URL validity.
+	 * @see <a href="https://mathiasbynens.be/demo/url-regex">https://mathiasbynens.be/demo/url-regex</a>
+	 * 
+	 * @return regex
+	 */
+	private static String getValidUrlRegex()
+	{
+		return "https?://[^\\s/$.?#].[^\\s\"\']*";
+	}
+	
 	public static ArrayList<String> getAllUrlsInString(String string)
 	{
 		ArrayList<String> urls = new ArrayList<>();
+		
+        Pattern pattern = Pattern.compile(getValidUrlRegex());
+        Matcher matcher = pattern.matcher(string);
+        
+		while (matcher.find()) {
+			urls.add(matcher.group());
+		}
 		
 		return urls;
 	}
