@@ -31,13 +31,7 @@ public class Helpers
 			}
 			
 			bufferedReader.close();
-		} catch (UnknownHostException e) {
-			
-		} catch (MalformedURLException e) {
-			
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+		} catch (Exception e) {}
       
 		return content.toString();
 	}

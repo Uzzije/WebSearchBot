@@ -1,5 +1,8 @@
 package application;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
 import java.lang.Thread.State;
 
 /**
@@ -7,44 +10,42 @@ import java.lang.Thread.State;
  */
 public class AppLogic
 {
+	private static final int STOPED = 0;
+	private static final int RUNNING = 1;
+	private static final int PAUSED = 2;
+	
+	private int state = 0;
+	private long executionTime;
+	
 	/**
 	 * URLs pool.
 	 */
 	private UrlPool urlPool;
 	
-	BotThread[] threads;
+	Thread[] threads;
 	
-	/**
-	 * Class constructor.
-	 */
-	public AppLogic()
-	{
-		urlPool = new UrlPool();
-	}
-	
-	public void start()
-	{
+	private void main()
+	{		
 		long startTime = System.currentTimeMillis();
-		long executionTime;
+		executionTime = 0;
+		
+		urlPool = new UrlPool();
 		
 		urlPool.addUrlToCheck(App.getFrame().getUrl());
 		
-		threads = new BotThread[App.getFrame().getThreadsNumber()];
+		threads = new Thread[App.getFrame().getThreadsNumber()];
 		
 		for (int i = 0; i < App.getFrame().getThreadsNumber(); i++) {
-			threads[i] = new BotThread(urlPool);
+			threads[i] = new Thread(new BotThread(urlPool));
+			threads[i].setDaemon(true);
 			threads[i].start();
 		}
 
 		int i = 0;
 		int waitingThreads = 0;
 		
-		while (true) {
+		while (RUNNING == state) {
 			executionTime = System.currentTimeMillis() - startTime;
-			
-//			System.out.println(executionTime);
-//			System.out.println(App.getFrame().getMaxExecutionTime() * 1000);
-//			System.out.println();
 			
 			if (executionTime >= App.getFrame().getMaxExecutionTime() * 1000) {
 				break;
@@ -67,12 +68,23 @@ public class AppLogic
 			}
 		}
 		
-		interuptAllBotThreads();
+		stopAllBotThreads();
 		
-		App.getFrame().log(String.format(
-			"Info: Search is finished\n\n"
-			+ "Keyword \"%s\" with primary URL %s\n"
-			+ "Execution time %d/%d using %d threads\n"
+		App.getFrame().log("Info: Search is finished\n\n" + getFormatedResult() + "\n");
+	}
+	
+	private void stopAllBotThreads()
+	{
+		for (Thread thread : threads) {
+			thread.stop();
+		}
+	}
+	
+	private String getFormatedResult()
+	{
+		return String.format(
+			"Keyword \"%s\" with primary URL %s\n"
+			+ "Execution time %d/%ds using %d threads\n"
 			+ "The keyword found in %d URLs out of %d total checked",
 			App.getFrame().getKeyword(),
 			App.getFrame().getUrl(),
@@ -81,13 +93,43 @@ public class AppLogic
 			App.getFrame().getThreadsNumber(),
 			urlPool.getTotalFoundUrl(),
 			urlPool.getTotalCheckedUrl()
-		));
+		);
 	}
 	
-	private void interuptAllBotThreads()
-	{
-		for (BotThread thread : threads) {
-			thread.interrupt();
+	public void start() {
+		state = RUNNING;
+		
+		main();
+	}
+	
+	public void pause() {
+		state = PAUSED;
+	}
+	
+	public void stop() {
+		state = STOPED;
+	}
+	
+	public void save(File file) {
+		PrintWriter writer;
+		
+		try {
+			App.getFrame().setStatus("Saving in " + file.getAbsolutePath());
+			
+			writer = new PrintWriter(file);
+			
+			writer.println(getFormatedResult());
+			writer.println();
+			
+			for (String url : urlPool.getFoundUrls()) {
+				writer.println(url);
+			}
+			
+			writer.close();
+			
+			App.getFrame().setStatus("Result saved in " + file.getAbsolutePath());
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
 		}
 	}
 }

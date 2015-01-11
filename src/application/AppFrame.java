@@ -1,5 +1,6 @@
 package application;
 
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -11,6 +12,8 @@ import javax.swing.JButton;
 
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
+import java.io.File;
+import java.io.PrintWriter;
 
 import javax.swing.JTextPane;
 
@@ -35,6 +38,8 @@ public class AppFrame extends JFrame
 	private JSpinner spinnerAmountOfThreads;
 	
 	private JTextPane logOutput;
+	
+	private JLabel lblStatus;
 	
 	public AppFrame()
 	{
@@ -86,7 +91,7 @@ public class AppFrame extends JFrame
 		spinnerAmountOfThreads.setBounds(161, 83, 50, 20);
 		spinnerAmountOfThreads.setValue(2);
 		mainPanel.add(spinnerAmountOfThreads);
-		
+
 		// Action buttons
 		btnStart = new JButton("Start");
 		btnStart.addActionListener(new ActionListener() {
@@ -95,7 +100,19 @@ public class AppFrame extends JFrame
 					if (Helpers.isUrlValid(getUrl())) {
 						if (1 <= getThreadsNumber()) {
 							btnStart.setEnabled(false);
-							App.getLogic().start();
+							btnResume.setEnabled(false);
+							btnPause.setEnabled(true);
+							btnStop.setEnabled(true);
+							btnSaveResult.setEnabled(false);
+							
+							log("Info: Search was start.");
+							lblStatus.setText("Searching...");
+							
+							new Thread(new Runnable() {
+					            public void run() {
+					            	App.getLogic().start();
+					            }
+					        }).start();
 						} else {
 							log("Validation: It must have at least one thread to execute the bot!");
 						}
@@ -121,11 +138,46 @@ public class AppFrame extends JFrame
 		mainPanel.add(btnPause);
 		
 		btnStop = new JButton("Stop");
+		btnStop.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				btnStart.setEnabled(true);
+				btnResume.setEnabled(false);
+				btnPause.setEnabled(false);
+				btnStop.setEnabled(false);
+				btnSaveResult.setEnabled(true);
+				
+				log("Info: Bot was stopped.");
+				setStatus("Stopped");
+				
+				new Thread(new Runnable() {
+		            public void run() {
+		            	App.getLogic().stop();
+		            }
+		        }).start();
+			}
+		});
 		btnStop.setBounds(303, 111, 82, 23);
 		btnStop.setEnabled(false);
 		mainPanel.add(btnStop);
 		
 		btnSaveResult = new JButton("Save result");
+		btnSaveResult.addActionListener(new ActionListener() {
+			private File file;
+
+			public void actionPerformed(ActionEvent e) {
+				JFileChooser fileChooser = new JFileChooser();
+				
+				if (fileChooser.showSaveDialog(AppFrame.this) == JFileChooser.APPROVE_OPTION) {
+					file = fileChooser.getSelectedFile();
+					
+					new Thread(new Runnable() {
+			            public void run() {
+			            	App.getLogic().save(file);
+			            }
+			        }).start();
+				}
+			}
+		});
 		btnSaveResult.setBounds(395, 111, 89, 23);
 		btnSaveResult.setEnabled(false);
 		mainPanel.add(btnSaveResult);
@@ -139,7 +191,7 @@ public class AppFrame extends JFrame
 		mainPanel.add(consoleScroll);
 		
 		// Status
-		JLabel lblStatus = new JLabel("Status: Ready");
+		lblStatus = new JLabel("Status: Ready");
 		lblStatus.setBounds(10, 450, 474, 14);
 		mainPanel.add(lblStatus);
 	}
@@ -188,5 +240,10 @@ public class AppFrame extends JFrame
 				btnSaveResult.setEnabled(enabled);
 				break;
 		}
+	}
+	
+	public void setStatus(String status)
+	{
+		lblStatus.setText(status);
 	}
 }

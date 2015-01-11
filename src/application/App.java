@@ -1,7 +1,6 @@
 package application;
 
-import java.awt.EventQueue;
-
+import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 
 public class App
@@ -12,7 +11,7 @@ public class App
 
     public App()
     {
-        EventQueue.invokeLater(new Runnable() {
+    	SwingUtilities.invokeLater(new Runnable() {
             public void run() {
                 appFrame = new AppFrame();
                 appFrame.setVisible(true);
@@ -25,6 +24,7 @@ public class App
             }
         });
 
+        appLogicThread.setDaemon(true);
         appLogicThread.start();
     }
 

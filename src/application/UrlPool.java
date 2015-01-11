@@ -50,7 +50,7 @@ public class UrlPool
 	 */
 	public void addUrlToCheck(String url)
 	{
-		if (false == checkedUrls.contains(url)) {
+		if (false == checkedUrls.contains(url) && false == urlQueue.contains(url)) {
 			urlQueue.addLast(url);
 		}
 	}
@@ -110,5 +110,15 @@ public class UrlPool
 	public int getTotalFoundUrl()
 	{
 		return foundUrls.size();
+	}
+	
+	/**
+	 * Get a list of URLs where the keyword was found.
+	 * 
+	 * @return found URLs
+	 */
+	public ArrayList<String> getFoundUrls()
+	{
+		return foundUrls;
 	}
 }

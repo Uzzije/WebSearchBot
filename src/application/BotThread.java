@@ -1,6 +1,5 @@
 package application;
 
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 
 public class BotThread extends Thread
@@ -27,13 +26,13 @@ public class BotThread extends Thread
 				url = urlPool.getNextUrlToCheck();
 			}
 
+			urlPool.markUrlAsChecked(url);
+
 			String content = Helpers.getUrlContents(url);
 		
 			if (content.contains(App.getFrame().getKeyword())) {
 				urlPool.addUrlAssFound(url);
 			}
-
-			urlPool.markUrlAsChecked(url);
 
 			ArrayList<String> urlsInContent = Helpers.getAllUrlsInString(content);
 			
