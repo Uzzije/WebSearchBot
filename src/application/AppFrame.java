@@ -104,7 +104,7 @@ public class AppFrame extends JFrame
 							btnStop.setEnabled(true);
 							btnSaveResult.setEnabled(false);
 							
-							log("Info: Search was start.");
+							log("Info: Search was started.");
 							lblStatus.setText("Searching...");
 							
 							new Thread(new Runnable() {
@@ -158,7 +158,7 @@ public class AppFrame extends JFrame
 				btnStop.setEnabled(true);
 				btnSaveResult.setEnabled(true);
 				
-				log("Info: Bot was paused.");
+				log("Info: Search was paused.");
 				
 				new Thread(new Runnable() {
 		            public void run() {
@@ -180,7 +180,7 @@ public class AppFrame extends JFrame
 				btnStop.setEnabled(false);
 				btnSaveResult.setEnabled(true);
 				
-				log("Info: Bot was stopped.");
+				log("Info: Search was stopped.");
 				setStatus("Stopped");
 				
 				new Thread(new Runnable() {

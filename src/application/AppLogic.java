@@ -27,7 +27,7 @@ public class AppLogic
 	 */
 	private UrlPool urlPool;
 	
-	private Thread[] threads;
+	private BotThread[] threads;
 	
 	private void main()
 	{		
@@ -40,12 +40,14 @@ public class AppLogic
 			
 			urlPool.addUrlToCheck(App.getFrame().getUrl());
 			
-			threads = new Thread[App.getFrame().getThreadsNumber()];
+			threads = new BotThread[App.getFrame().getThreadsNumber()];
 			
 			for (int i = 0; i < App.getFrame().getThreadsNumber(); i++) {
-				threads[i] = new Thread(new BotThread(urlPool));
+				threads[i] = new BotThread(urlPool);
 				threads[i].setDaemon(true);
 				threads[i].start();
+				
+				System.out.println(threads[i].getName() + " started");
 			}
 	
 			current = 0;
@@ -58,6 +60,8 @@ public class AppLogic
 			executionTime = System.currentTimeMillis() - startTime - pausedTime;
 			
 			if (executionTime >= App.getFrame().getMaxExecutionTime() * 1000) {
+				state = STOPPED;
+				
 				break;
 			}
 			
@@ -68,6 +72,8 @@ public class AppLogic
 			}
 			
 			if (waitingThreads == App.getFrame().getThreadsNumber()) {
+				state = STOPPED;
+				
 				break;
 			}
 			
@@ -78,14 +84,28 @@ public class AppLogic
 			}
 		}
 		
-		System.out.println("STOPPED");
-		
 		if (STOPPED == state) {
+			System.out.println("Called STOP command.");
+			
+			App.getFrame().setButtonEnabled(AppFrame.BUTTON_START, true);
+			App.getFrame().setButtonEnabled(AppFrame.BUTTON_RESUME, false);
+			App.getFrame().setButtonEnabled(AppFrame.BUTTON_PAUSE, false);
+			App.getFrame().setButtonEnabled(AppFrame.BUTTON_STOP, false);
+			App.getFrame().setButtonEnabled(AppFrame.BUTTON_SAVE_RESULT, true);
+			
+			App.getFrame().setStatus("Search finished or stopped");
+			
 			stopAllThreads();
 			
-			System.out.println("Log");
-			
 			App.getFrame().log("Info: Search is finished\n\n" + getFormatedResult() + "\n");
+		} else if (PAUSED == state) {
+			App.getFrame().setButtonEnabled(AppFrame.BUTTON_START, false);
+			App.getFrame().setButtonEnabled(AppFrame.BUTTON_RESUME, true);
+			App.getFrame().setButtonEnabled(AppFrame.BUTTON_PAUSE, false);
+			App.getFrame().setButtonEnabled(AppFrame.BUTTON_STOP, true);
+			App.getFrame().setButtonEnabled(AppFrame.BUTTON_SAVE_RESULT, true);
+			
+			pauseAllThreads();
 		}
 	}
 	
@@ -95,11 +115,21 @@ public class AppLogic
 	
 	private void stopAllThreads()
 	{
-		for (Thread thread : threads) {
+		for (BotThread thread : threads) {
 			thread.interrupt();
 			
-			System.out.println("Thread stop");
+			System.out.println(thread.getName() + " stopped");
+		}
+	}
+	
+	private synchronized void pauseAllThreads()
+	{
+		pauseTime = System.currentTimeMillis();
+		
+		for (BotThread thread : threads) {
+			thread.lock();
 			
+			System.out.println(thread.getName() + " paused");
 		}
 	}
 	
@@ -126,18 +156,6 @@ public class AppLogic
 	public void pause() {
 		state = PAUSED;
 		
-		for (int i = 0; i < threads.length; i++) {
-			try {
-				synchronized (threads[i]) {
-					threads[i].wait();
-				}
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-		}
-		
-		pauseTime = System.currentTimeMillis();
-		
 		App.getFrame().setStatus(
 			String.format("Paused at %ds", (System.currentTimeMillis() - startTime - pausedTime) / 1000)
 		);
@@ -149,9 +167,7 @@ public class AppLogic
 	
 	public void resume() {
 		for (int i = 0; i < threads.length; i++) {
-			synchronized (threads[i]) {
-				threads[i].notify();
-			}
+			threads[i].unlock();
 		}
 		
 		pausedTime += System.currentTimeMillis() - pauseTime;
@@ -181,6 +197,30 @@ public class AppLogic
 			App.getFrame().log("Info: Saved in " + file.getAbsolutePath());
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
+		}
+	}
+	
+	public void lock(BotThread thread)
+	{
+		for (int i = 0; i < threads.length; i++) {
+			if (thread == threads[i]) {
+				threads[i].lock();
+				
+				break;
+			}
+		}
+	}
+	
+	public void unlock(int amount)
+	{
+		for (int i = 0; i < threads.length; i++) {
+			if (threads[i].unlock()) {
+				amount--;
+			}
+
+			if (0 == amount) {
+				break;
+			}
 		}
 	}
 }

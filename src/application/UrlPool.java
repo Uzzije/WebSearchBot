@@ -38,7 +38,7 @@ public class UrlPool
 	 * 
 	 * @return the next URL to check or null in case of empty queue
 	 */
-	public String getNextUrlToCheck()
+	public synchronized String getNextUrlToCheck()
 	{
 		return urlQueue.pollFirst();
 	}
@@ -60,7 +60,7 @@ public class UrlPool
 	 * 
 	 * @param urls URL list to add
 	 */
-	public void addUrlToCheck(ArrayList<String> urls)
+	public synchronized void addUrlToCheck(ArrayList<String> urls)
 	{
 		for (String url : urls) {
 			addUrlToCheck(url);
@@ -86,7 +86,7 @@ public class UrlPool
 	 * 
 	 * @param url URL to mark
 	 */
-	public void markUrlAsChecked(String url) {
+	public synchronized void markUrlAsChecked(String url) {
 		if (false == checkedUrls.contains(url)) {
 			checkedUrls.add(url);
 		}

@@ -4,7 +4,8 @@ import java.util.ArrayList;
 
 public class BotThread extends Thread
 {
-	UrlPool urlPool;
+	private UrlPool urlPool;
+	private boolean locked = false;
 	
 	public BotThread(UrlPool urlPool)
 	{
@@ -14,19 +15,20 @@ public class BotThread extends Thread
 	public void run()
 	{
 		while (!isInterrupted()) {
-			System.out.println("Thread waiting for link");
 			
 			String url = urlPool.getNextUrlToCheck();
 			
 			while (null == url) {
-				try {
-					synchronized (App.getFrame()) {
-						App.getFrame().wait();
-					}
-				} catch (InterruptedException e) {
-					System.out.println("Thread interrupted on waiting");
+				lock();
+
+				System.out.println(getName() + " waiting for a link");
 					
-					return;
+				while (locked) {
+					if (isInterrupted()) {
+						System.out.println(getName() + " interrupted on waiting a link");
+						
+						return;
+					}
 				}
 
 				url = urlPool.getNextUrlToCheck();
@@ -34,12 +36,20 @@ public class BotThread extends Thread
 
 			urlPool.markUrlAsChecked(url);
 
-			System.out.println("Thread accessing " + url);
+			System.out.println(getName() + " accessing " + url);
 			
 			String content = Helpers.getUrlContents(url);
 			
+			while (locked) {
+				if (isInterrupted()) {
+					System.out.println(getName() + " interrupted after accesing an URL and being locked");
+					
+					return;
+				}
+			}
+			
 			if (isInterrupted()) {
-				System.out.println("Thread interrupted after accesing an URL");
+				System.out.println(getName() + " interrupted after accesing an URL");
 				
 				urlPool.unmarkUrlAsChecked(url);
 				
@@ -55,23 +65,39 @@ public class BotThread extends Thread
 			if (0 < urlsInContent.size()) {
 				urlPool.addUrlToCheck(Helpers.getAllUrlsInString(content));
 				
-				synchronized (App.getFrame()) {
-					App.getFrame().notifyAll();
+				synchronized (this) {
+					App.getLogic().unlock(urlsInContent.size());
 				}
 			}
 		}
 		
-		System.out.println("Thread interrupted after the main thread method");
+		System.out.println(getName() + " interrupted after the main thread method");
 	}
 	
-	public void pause()
+	public synchronized boolean lock()
 	{
-		try {
-			synchronized (App.getLogic()) {
-				System.out.println("Waiting");
-				App.getLogic().wait();
-				System.out.println("Resumed");
-			}
-		} catch (InterruptedException e) {}
+		if (!isLocked()) {
+			locked = true;
+			
+			return true;
+		}
+		
+		return false;
+	}
+	
+	public synchronized boolean unlock()
+	{
+		if (isLocked()) {
+			locked = false;
+			
+			return true;
+		}
+		
+		return false;
+	}
+	
+	public synchronized boolean isLocked()
+	{
+		return locked;
 	}
 }
