@@ -46,7 +46,7 @@ public class UrlPool
 	/**
 	 * Add URL to the queue if it has not be check yet.
 	 * 
-	 * @param url URL to add
+	 * @param url to add
 	 */
 	public void addUrlToCheck(String url)
 	{
@@ -58,7 +58,7 @@ public class UrlPool
 	/**
 	 * Add URL list to the queue if it has not be check yet.
 	 * 
-	 * @param urls URL list to add
+	 * @param urls list to add
 	 */
 	public synchronized void addUrlToCheck(ArrayList<String> urls)
 	{
@@ -70,7 +70,7 @@ public class UrlPool
 	/**
 	 * Add URL to found list.
 	 * 
-	 * @param url URL to add
+	 * @param url to add
 	 */
 	public void addUrlAssFound(String url)
 	{
@@ -84,7 +84,7 @@ public class UrlPool
 	/**
 	 * Mark URL as checked.
 	 * 
-	 * @param url URL to mark
+	 * @param url to mark
 	 */
 	public synchronized void markUrlAsChecked(String url) {
 		if (false == checkedUrls.contains(url)) {
@@ -95,7 +95,7 @@ public class UrlPool
 	/**
 	 * Unmark URL as checked.
 	 * 
-	 * @param url URL to mark
+	 * @param url to mark
 	 */
 	public void unmarkUrlAsChecked(String url) {
 		if (checkedUrls.contains(url)) {

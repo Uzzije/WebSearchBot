@@ -16,30 +16,54 @@ import java.io.File;
 
 import javax.swing.JTextPane;
 
+/**
+ * Application graphical user interface logic.
+ */
 public class AppFrame extends JFrame
 {
+	/*
+	 * Constants for available GUI buttons.
+	 */
 	public static final String BUTTON_START = "start";
 	public static final String BUTTON_RESUME = "resume";
 	public static final String BUTTON_PAUSE = "pause";
 	public static final String BUTTON_STOP = "stop";
 	public static final String BUTTON_SAVE_RESULT = "save_result";
 	
+	/*
+	 * Text field inputs.
+	 */
 	private JTextField textFieldKeyword;
 	private JTextField textFieldUrl;
 	
+	/*
+	 * Buttons instances.
+	 */
 	private JButton btnStart;
 	private JButton btnResume;
 	private JButton btnPause;
 	private JButton btnStop;
 	private JButton btnSaveResult;
 	
+	/*
+	 * Number spinner instances.
+	 */
 	private JSpinner spinnerMaxExecutionTime;
 	private JSpinner spinnerAmountOfThreads;
 	
+	/*
+	 * Output area instance.
+	 */
 	private JTextPane logOutput;
 	
+	/*
+	 * Status label instance. 
+	 */
 	private JLabel lblStatus;
 	
+	/**
+	 * Constructor to build the GUI.
+	 */
 	public AppFrame()
 	{
 		setTitle("Web Search Bot");
@@ -230,31 +254,62 @@ public class AppFrame extends JFrame
 		mainPanel.add(lblStatus);
 	}
 	
+	/**
+	 * Main log action to put the the in the output area.
+	 * 
+	 * @param message to output
+	 */
 	public void log(String message)
 	{
 		logOutput.setText(logOutput.getText() + "\n" + message);
 	}
 	
+	/**
+	 * Get the primary URL address provided by user.
+	 * 
+	 * @return URL
+	 */
 	public String getUrl()
 	{
 		return textFieldUrl.getText();
 	}
 	
+	/**
+	 * Get the keyword provided by user.
+	 * 
+	 * @return keyword
+	 */
 	public String getKeyword()
 	{
 		return textFieldKeyword.getText();
 	}
 	
+	/**
+	 * Get maximum execution time.
+	 * 
+	 * @return max execution time
+	 */
 	public int getMaxExecutionTime()
 	{
 		return (int) spinnerMaxExecutionTime.getValue();
 	}
 	
+	/**
+	 * Get an amount of threads used for accessing links.
+	 * 
+	 * @return threads number
+	 */
 	public int getThreadsNumber()
 	{
 		return (int) spinnerAmountOfThreads.getValue();
 	}
 	
+	/**
+	 * Set button state.
+	 * 
+	 * @param button constant
+	 * @param enabled sets is it button state
+	 */
 	public void setButtonEnabled(String button, boolean enabled)
 	{
 		switch (button) {
@@ -276,6 +331,11 @@ public class AppFrame extends JFrame
 		}
 	}
 	
+	/**
+	 * Set status label.
+	 * 
+	 * @param status message
+	 */
 	public void setStatus(String status)
 	{
 		lblStatus.setText(status);

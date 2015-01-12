@@ -2,22 +2,40 @@ package application;
 
 import java.util.ArrayList;
 
+/**
+ * Thread to process the URL fetching.
+ */
 public class BotThread extends Thread
 {
+	/**
+	 * URL pool.
+	 */
 	private UrlPool urlPool;
+	
+	/**
+	 * Is the the thread locked and should wait.
+	 */
 	private boolean locked = false;
 	
+	/**
+	 * Class construcotr.
+	 */
 	public BotThread(UrlPool urlPool)
 	{
 		this.urlPool = urlPool;
 	}
 	
+	/**
+	 * The main thread logic.
+	 */
 	public void run()
 	{
+		// Do while the thread is not interrupted
 		while (!isInterrupted()) {
 			
 			String url = urlPool.getNextUrlToCheck();
 			
+			// There are no URL to proccess yet, so let's wait
 			while (null == url) {
 				lock();
 
@@ -34,20 +52,25 @@ public class BotThread extends Thread
 				url = urlPool.getNextUrlToCheck();
 			}
 
+			// Lock the URL as being checked (still processing)
 			urlPool.markUrlAsChecked(url);
 
 			System.out.println(getName() + " accessing " + url);
-			
+
 			String content = Helpers.getUrlContents(url);
 			
+			// Check if the thread was not locked
 			while (locked) {
 				if (isInterrupted()) {
 					System.out.println(getName() + " interrupted after accesing an URL and being locked");
+					
+					urlPool.unmarkUrlAsChecked(url);
 					
 					return;
 				}
 			}
 			
+			// Check if the thread stopped (interrupted)
 			if (isInterrupted()) {
 				System.out.println(getName() + " interrupted after accesing an URL");
 				
@@ -56,6 +79,7 @@ public class BotThread extends Thread
 				return;
 			}
 		
+			// Does the page contain the keyword?
 			if (content.contains(App.getFrame().getKeyword())) {
 				urlPool.addUrlAssFound(url);
 			}
@@ -66,6 +90,7 @@ public class BotThread extends Thread
 				urlPool.addUrlToCheck(Helpers.getAllUrlsInString(content));
 				
 				synchronized (this) {
+					// Notify and unlock threads that there are new URLs to process
 					App.getLogic().unlock(urlsInContent.size());
 				}
 			}
@@ -74,9 +99,14 @@ public class BotThread extends Thread
 		System.out.println(getName() + " interrupted after the main thread method");
 	}
 	
+	/**
+	 * Lock the thread.
+	 * 
+	 * @return if the lock status changed
+	 */
 	public synchronized boolean lock()
 	{
-		if (!isLocked()) {
+		if (locked) {
 			locked = true;
 			
 			return true;
@@ -85,19 +115,19 @@ public class BotThread extends Thread
 		return false;
 	}
 	
+	/**
+	 * Unlock the thread.
+	 * 
+	 * @return if the lock status changed
+	 */
 	public synchronized boolean unlock()
 	{
-		if (isLocked()) {
+		if (locked) {
 			locked = false;
 			
 			return true;
 		}
 		
 		return false;
-	}
-	
-	public synchronized boolean isLocked()
-	{
-		return locked;
 	}
 }

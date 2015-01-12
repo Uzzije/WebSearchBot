@@ -10,16 +10,46 @@ import java.lang.Thread.State;
  */
 public class AppLogic
 {
+	/*
+	 * Application states.
+	 */
 	private final int STOPPED = 0;
 	private final int RUNNING = 1;
 	private final int PAUSED = 2;
 	
+	/**
+	 * Current application state.
+	 */
 	private int state = STOPPED;
+	
+	/**
+	 * Total execution time.
+	 */
 	private long executionTime;
+	
+	/**
+	 * Waiting threads amount.
+	 */
 	private int waitingThreads;
+	
+	/**
+	 * Current thread for checking.
+	 */
 	private int current;
+	
+	/**
+	 * Application start time stamp.
+	 */
 	private long startTime;
+	
+	/**
+	 * Application pause time stamp.
+	 */
 	private long pauseTime;
+	
+	/**
+	 * Total paused time.
+	 */
 	private long pausedTime;
 	
 	/**
@@ -27,10 +57,17 @@ public class AppLogic
 	 */
 	private UrlPool urlPool;
 	
+	/**
+	 * Active threads.
+	 */
 	private BotThread[] threads;
 	
+	/**
+	 * Main application method to control the threads.
+	 */
 	private void main()
-	{		
+	{
+		// Creates and runs the threads first time or after the search was stopped/finished
 		if (STOPPED == state) {
 			startTime = System.currentTimeMillis();
 			pausedTime = 0;
@@ -56,6 +93,7 @@ public class AppLogic
 		
 		state = RUNNING;
 		
+		// Main loop to check if the threads have finished the work
 		while (RUNNING == state) {
 			executionTime = System.currentTimeMillis() - startTime - pausedTime;
 			
@@ -84,6 +122,7 @@ public class AppLogic
 			}
 		}
 		
+		// Check is it stoped or paused
 		if (STOPPED == state) {
 			System.out.println("Called STOP command.");
 			
@@ -109,10 +148,18 @@ public class AppLogic
 		}
 	}
 	
+	/**
+	 * Get state of the application logic.
+	 * 
+	 * @return state
+	 */
 	public int getState() {
 		return state;
 	}
 	
+	/**
+	 * Stops all the threads by interrupting them.
+	 */
 	private void stopAllThreads()
 	{
 		for (BotThread thread : threads) {
@@ -122,6 +169,9 @@ public class AppLogic
 		}
 	}
 	
+	/**
+	 * Pause all the threads.
+	 */
 	private synchronized void pauseAllThreads()
 	{
 		pauseTime = System.currentTimeMillis();
@@ -133,6 +183,11 @@ public class AppLogic
 		}
 	}
 	
+	/**
+	 * Get formated result for the output log in GUI.
+	 * 
+	 * @return formated result
+	 */
 	private String getFormatedResult()
 	{
 		return String.format(
@@ -149,10 +204,16 @@ public class AppLogic
 		);
 	}
 	
+	/**
+	 * Start the main thread controlling loop.
+	 */
 	public void start() {
 		main();
 	}
 	
+	/**
+	 * Pause the main thread controlling loop.
+	 */
 	public void pause() {
 		state = PAUSED;
 		
@@ -161,10 +222,16 @@ public class AppLogic
 		);
 	}
 	
+	/**
+	 * Stop the main thread controlling loop.
+	 */
 	public void stop() {
 		state = STOPPED;
 	}
 	
+	/**
+	 * Resume the main thread controlling loop.
+	 */
 	public void resume() {
 		for (int i = 0; i < threads.length; i++) {
 			threads[i].unlock();
@@ -175,6 +242,11 @@ public class AppLogic
 		main();
 	}
 	
+	/**
+	 * Save the result.
+	 * 
+	 * @param file to save in
+	 */
 	public void save(File file) {
 		PrintWriter writer;
 		
@@ -200,6 +272,11 @@ public class AppLogic
 		}
 	}
 	
+	/**
+	 * Lock targeted thread.
+	 * 
+	 * @param thread to lock
+	 */
 	public void lock(BotThread thread)
 	{
 		for (int i = 0; i < threads.length; i++) {
@@ -211,6 +288,11 @@ public class AppLogic
 		}
 	}
 	
+	/**
+	 * Unlock next waiting threads.
+	 * 
+	 * @param amount of threads to unlock
+	 */
 	public void unlock(int amount)
 	{
 		for (int i = 0; i < threads.length; i++) {
