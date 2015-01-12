@@ -13,7 +13,6 @@ import javax.swing.JButton;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
 import java.io.File;
-import java.io.PrintWriter;
 
 import javax.swing.JTextPane;
 
@@ -128,11 +127,46 @@ public class AppFrame extends JFrame
 		mainPanel.add(btnStart);
 		
 		btnResume = new JButton("Resume");
+		btnResume.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				btnStart.setEnabled(false);
+				btnResume.setEnabled(false);
+				btnPause.setEnabled(true);
+				btnStop.setEnabled(true);
+				btnSaveResult.setEnabled(false);
+				
+				log("Info: Bot was resumed.");
+				setStatus("Searching...");
+				
+				new Thread(new Runnable() {
+		            public void run() {
+		            	App.getLogic().resume();
+		            }
+		        }).start();
+			}
+		});
 		btnResume.setBounds(109, 111, 85, 23);
 		btnResume.setEnabled(false);
 		mainPanel.add(btnResume);
 		
 		btnPause = new JButton("Pause");
+		btnPause.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				btnStart.setEnabled(false);
+				btnResume.setEnabled(true);
+				btnPause.setEnabled(false);
+				btnStop.setEnabled(true);
+				btnSaveResult.setEnabled(true);
+				
+				log("Info: Bot was paused.");
+				
+				new Thread(new Runnable() {
+		            public void run() {
+		            	App.getLogic().pause();
+		            }
+		        }).start();
+			}
+		});
 		btnPause.setBounds(204, 111, 89, 23);
 		btnPause.setEnabled(false);
 		mainPanel.add(btnPause);

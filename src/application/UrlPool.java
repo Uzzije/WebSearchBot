@@ -93,6 +93,17 @@ public class UrlPool
 	}
 	
 	/**
+	 * Unmark URL as checked.
+	 * 
+	 * @param url URL to mark
+	 */
+	public void unmarkUrlAsChecked(String url) {
+		if (checkedUrls.contains(url)) {
+			checkedUrls.remove(url);
+		}
+	}
+	
+	/**
 	 * Get total number of checked URLs.
 	 * 
 	 * @return total checked

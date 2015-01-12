@@ -13,22 +13,38 @@ public class BotThread extends Thread
 	
 	public void run()
 	{
-		while (true) {
+		while (!isInterrupted()) {
+			System.out.println("Thread waiting for link");
+			
 			String url = urlPool.getNextUrlToCheck();
 			
 			while (null == url) {
 				try {
-					synchronized(App.getLogic()) {
-						App.getLogic().wait();
+					synchronized (App.getFrame()) {
+						App.getFrame().wait();
 					}
-				} catch (InterruptedException e) {}
+				} catch (InterruptedException e) {
+					System.out.println("Thread interrupted on waiting");
+					
+					return;
+				}
 
 				url = urlPool.getNextUrlToCheck();
 			}
 
 			urlPool.markUrlAsChecked(url);
 
+			System.out.println("Thread accessing " + url);
+			
 			String content = Helpers.getUrlContents(url);
+			
+			if (isInterrupted()) {
+				System.out.println("Thread interrupted after accesing an URL");
+				
+				urlPool.unmarkUrlAsChecked(url);
+				
+				return;
+			}
 		
 			if (content.contains(App.getFrame().getKeyword())) {
 				urlPool.addUrlAssFound(url);
@@ -39,10 +55,23 @@ public class BotThread extends Thread
 			if (0 < urlsInContent.size()) {
 				urlPool.addUrlToCheck(Helpers.getAllUrlsInString(content));
 				
-				synchronized(App.getLogic()) {
-					App.getLogic().notifyAll();
+				synchronized (App.getFrame()) {
+					App.getFrame().notifyAll();
 				}
 			}
 		}
+		
+		System.out.println("Thread interrupted after the main thread method");
+	}
+	
+	public void pause()
+	{
+		try {
+			synchronized (App.getLogic()) {
+				System.out.println("Waiting");
+				App.getLogic().wait();
+				System.out.println("Resumed");
+			}
+		} catch (InterruptedException e) {}
 	}
 }

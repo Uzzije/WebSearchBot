@@ -10,48 +10,58 @@ import java.lang.Thread.State;
  */
 public class AppLogic
 {
-	private static final int STOPED = 0;
-	private static final int RUNNING = 1;
-	private static final int PAUSED = 2;
+	private final int STOPPED = 0;
+	private final int RUNNING = 1;
+	private final int PAUSED = 2;
 	
-	private int state = 0;
+	private int state = STOPPED;
 	private long executionTime;
+	private int waitingThreads;
+	private int current;
+	private long startTime;
+	private long pauseTime;
+	private long pausedTime;
 	
 	/**
 	 * URLs pool.
 	 */
 	private UrlPool urlPool;
 	
-	Thread[] threads;
+	private Thread[] threads;
 	
 	private void main()
 	{		
-		long startTime = System.currentTimeMillis();
-		executionTime = 0;
-		
-		urlPool = new UrlPool();
-		
-		urlPool.addUrlToCheck(App.getFrame().getUrl());
-		
-		threads = new Thread[App.getFrame().getThreadsNumber()];
-		
-		for (int i = 0; i < App.getFrame().getThreadsNumber(); i++) {
-			threads[i] = new Thread(new BotThread(urlPool));
-			threads[i].setDaemon(true);
-			threads[i].start();
+		if (STOPPED == state) {
+			startTime = System.currentTimeMillis();
+			pausedTime = 0;
+			executionTime = 0;
+			
+			urlPool = new UrlPool();
+			
+			urlPool.addUrlToCheck(App.getFrame().getUrl());
+			
+			threads = new Thread[App.getFrame().getThreadsNumber()];
+			
+			for (int i = 0; i < App.getFrame().getThreadsNumber(); i++) {
+				threads[i] = new Thread(new BotThread(urlPool));
+				threads[i].setDaemon(true);
+				threads[i].start();
+			}
+	
+			current = 0;
+			waitingThreads = 0;
 		}
-
-		int i = 0;
-		int waitingThreads = 0;
+		
+		state = RUNNING;
 		
 		while (RUNNING == state) {
-			executionTime = System.currentTimeMillis() - startTime;
+			executionTime = System.currentTimeMillis() - startTime - pausedTime;
 			
 			if (executionTime >= App.getFrame().getMaxExecutionTime() * 1000) {
 				break;
 			}
 			
-			if (State.WAITING == threads[i].getState()) {
+			if (State.WAITING == threads[current].getState()) {
 				waitingThreads++;
 			} else {
 				waitingThreads = 0;
@@ -61,22 +71,35 @@ public class AppLogic
 				break;
 			}
 			
-			if (i + 1 == App.getFrame().getThreadsNumber()) {
-				i = 0;
+			if (current + 1 == App.getFrame().getThreadsNumber()) {
+				current = 0;
 			} else {
-				i++;
+				current++;
 			}
 		}
 		
-		stopAllBotThreads();
+		System.out.println("STOPPED");
 		
-		App.getFrame().log("Info: Search is finished\n\n" + getFormatedResult() + "\n");
+		if (STOPPED == state) {
+			stopAllThreads();
+			
+			System.out.println("Log");
+			
+			App.getFrame().log("Info: Search is finished\n\n" + getFormatedResult() + "\n");
+		}
 	}
 	
-	private void stopAllBotThreads()
+	public int getState() {
+		return state;
+	}
+	
+	private void stopAllThreads()
 	{
 		for (Thread thread : threads) {
-			thread.stop();
+			thread.interrupt();
+			
+			System.out.println("Thread stop");
+			
 		}
 	}
 	
@@ -97,17 +120,43 @@ public class AppLogic
 	}
 	
 	public void start() {
-		state = RUNNING;
-		
 		main();
 	}
 	
 	public void pause() {
 		state = PAUSED;
+		
+		for (int i = 0; i < threads.length; i++) {
+			try {
+				synchronized (threads[i]) {
+					threads[i].wait();
+				}
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+		
+		pauseTime = System.currentTimeMillis();
+		
+		App.getFrame().setStatus(
+			String.format("Paused at %ds", (System.currentTimeMillis() - startTime - pausedTime) / 1000)
+		);
 	}
 	
 	public void stop() {
-		state = STOPED;
+		state = STOPPED;
+	}
+	
+	public void resume() {
+		for (int i = 0; i < threads.length; i++) {
+			synchronized (threads[i]) {
+				threads[i].notify();
+			}
+		}
+		
+		pausedTime += System.currentTimeMillis() - pauseTime;
+		
+		main();
 	}
 	
 	public void save(File file) {
@@ -115,6 +164,7 @@ public class AppLogic
 		
 		try {
 			App.getFrame().setStatus("Saving in " + file.getAbsolutePath());
+			App.getFrame().log("Info: Saving in " + file.getAbsolutePath());
 			
 			writer = new PrintWriter(file);
 			
@@ -128,6 +178,7 @@ public class AppLogic
 			writer.close();
 			
 			App.getFrame().setStatus("Result saved in " + file.getAbsolutePath());
+			App.getFrame().log("Info: Saved in " + file.getAbsolutePath());
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
