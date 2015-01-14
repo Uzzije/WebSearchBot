@@ -3,7 +3,6 @@ package application;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
-import java.lang.Thread.State;
 
 /**
  * Main application logic to control the threads and save the results.
@@ -79,12 +78,15 @@ public class AppLogic
 			
 			threads = new BotThread[App.getFrame().getThreadsNumber()];
 			
-			for (int i = 0; i < App.getFrame().getThreadsNumber(); i++) {
+			for (int i = 0; i < threads.length; i++) {
 				threads[i] = new BotThread(urlPool);
 				threads[i].setDaemon(true);
-				threads[i].start();
+			}
+			
+			for (BotThread thread : threads) {
+				thread.start();
 				
-				System.out.println(threads[i].getName() + " started");
+				System.out.println(thread.getName() + " started");
 			}
 	
 			current = 0;
@@ -103,7 +105,7 @@ public class AppLogic
 				break;
 			}
 			
-			if (State.WAITING == threads[current].getState()) {
+			if (threads[current].isLocked()) {
 				waitingThreads++;
 			} else {
 				waitingThreads = 0;
@@ -122,7 +124,7 @@ public class AppLogic
 			}
 		}
 		
-		// Check is it stoped or paused
+		// Check is it stopped or paused
 		if (STOPPED == state) {
 			System.out.println("Called STOP command.");
 			
@@ -133,7 +135,7 @@ public class AppLogic
 			App.getFrame().setButtonEnabled(AppFrame.BUTTON_SAVE_RESULT, true);
 			
 			App.getFrame().setStatus("Search finished or stopped");
-			
+
 			stopAllThreads();
 			
 			App.getFrame().log("Info: Search is finished\n\n" + getFormatedResult() + "\n");
@@ -143,8 +145,10 @@ public class AppLogic
 			App.getFrame().setButtonEnabled(AppFrame.BUTTON_PAUSE, false);
 			App.getFrame().setButtonEnabled(AppFrame.BUTTON_STOP, true);
 			App.getFrame().setButtonEnabled(AppFrame.BUTTON_SAVE_RESULT, true);
-			
+
 			pauseAllThreads();
+		} else {
+			System.out.println("Main logic loop has state " + " instead of STOPPED or PAUSED");
 		}
 	}
 	
@@ -172,12 +176,12 @@ public class AppLogic
 	/**
 	 * Pause all the threads.
 	 */
-	private synchronized void pauseAllThreads()
+	private void pauseAllThreads()
 	{
 		pauseTime = System.currentTimeMillis();
 		
 		for (BotThread thread : threads) {
-			thread.lock();
+			thread.suspend();
 			
 			System.out.println(thread.getName() + " paused");
 		}
@@ -207,14 +211,16 @@ public class AppLogic
 	/**
 	 * Start the main thread controlling loop.
 	 */
-	public void start() {
+	public void start()
+	{
 		main();
 	}
 	
 	/**
 	 * Pause the main thread controlling loop.
 	 */
-	public void pause() {
+	public void pause()
+	{
 		state = PAUSED;
 		
 		App.getFrame().setStatus(
@@ -225,16 +231,18 @@ public class AppLogic
 	/**
 	 * Stop the main thread controlling loop.
 	 */
-	public void stop() {
+	public void stop()
+	{
 		state = STOPPED;
 	}
 	
 	/**
 	 * Resume the main thread controlling loop.
 	 */
-	public void resume() {
-		for (int i = 0; i < threads.length; i++) {
-			threads[i].unlock();
+	public void resume()
+	{
+		for (BotThread thread : threads) {
+			thread.resume();
 		}
 		
 		pausedTime += System.currentTimeMillis() - pauseTime;
@@ -247,7 +255,8 @@ public class AppLogic
 	 * 
 	 * @param file to save in
 	 */
-	public void save(File file) {
+	public void save(File file)
+	{
 		PrintWriter writer;
 		
 		try {
@@ -273,27 +282,11 @@ public class AppLogic
 	}
 	
 	/**
-	 * Lock targeted thread.
-	 * 
-	 * @param thread to lock
-	 */
-	public void lock(BotThread thread)
-	{
-		for (int i = 0; i < threads.length; i++) {
-			if (thread == threads[i]) {
-				threads[i].lock();
-				
-				break;
-			}
-		}
-	}
-	
-	/**
 	 * Unlock next waiting threads.
 	 * 
 	 * @param amount of threads to unlock
 	 */
-	public void unlock(int amount)
+	public synchronized void unlock(int amount)
 	{
 		for (int i = 0; i < threads.length; i++) {
 			if (threads[i].unlock()) {

@@ -12,6 +12,8 @@ import javax.swing.JButton;
 
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
+import java.awt.event.AdjustmentEvent;
+import java.awt.event.AdjustmentListener;
 import java.io.File;
 
 import javax.swing.JTextPane;
@@ -52,7 +54,7 @@ public class AppFrame extends JFrame
 	private JSpinner spinnerAmountOfThreads;
 	
 	/*
-	 * Output area instance.
+	 * Output area instances.
 	 */
 	private JTextPane logOutput;
 	
@@ -245,6 +247,10 @@ public class AppFrame extends JFrame
 		logOutput.setEditable(false);
 		logOutput.setText("Info: Application loaded successfully and ready to start.");
 		JScrollPane consoleScroll = new JScrollPane(logOutput);
+		consoleScroll.getVerticalScrollBar().addAdjustmentListener(new AdjustmentListener() {  
+			public void adjustmentValueChanged(AdjustmentEvent e) {  
+				e.getAdjustable().setValue(e.getAdjustable().getMaximum());  
+			}}); 
 		consoleScroll.setBounds(10, 145, 474, 300);
 		mainPanel.add(consoleScroll);
 		

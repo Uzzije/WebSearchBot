@@ -18,7 +18,12 @@ public class BotThread extends Thread
 	private boolean locked = false;
 	
 	/**
-	 * Class construcotr.
+	 * Is the the thread locked and should be finished.
+	 */
+	private boolean interrupted = false;
+	
+	/**
+	 * Class constructor.
 	 */
 	public BotThread(UrlPool urlPool)
 	{
@@ -35,13 +40,13 @@ public class BotThread extends Thread
 			
 			String url = urlPool.getNextUrlToCheck();
 			
-			// There are no URL to proccess yet, so let's wait
+			// There are no URL to process yet, so let's wait
 			while (null == url) {
 				lock();
 
 				System.out.println(getName() + " waiting for a link");
 					
-				while (locked) {
+				while (isLocked()) {
 					if (isInterrupted()) {
 						System.out.println(getName() + " interrupted on waiting a link");
 						
@@ -60,7 +65,7 @@ public class BotThread extends Thread
 			String content = Helpers.getUrlContents(url);
 			
 			// Check if the thread was not locked
-			while (locked) {
+			while (isLocked()) {
 				if (isInterrupted()) {
 					System.out.println(getName() + " interrupted after accesing an URL and being locked");
 					
@@ -89,10 +94,8 @@ public class BotThread extends Thread
 			if (0 < urlsInContent.size()) {
 				urlPool.addUrlToCheck(Helpers.getAllUrlsInString(content));
 				
-				synchronized (this) {
-					// Notify and unlock threads that there are new URLs to process
-					App.getLogic().unlock(urlsInContent.size());
-				}
+				// Notify and unlock threads that there are new URLs to process
+				App.getLogic().unlock(urlsInContent.size());
 			}
 		}
 		
@@ -106,7 +109,7 @@ public class BotThread extends Thread
 	 */
 	public synchronized boolean lock()
 	{
-		if (locked) {
+		if (!locked) {
 			locked = true;
 			
 			return true;
@@ -129,5 +132,33 @@ public class BotThread extends Thread
 		}
 		
 		return false;
+	}
+	
+	/**
+	 * Check is the thread locked.
+	 * 
+	 * @return is locked
+	 */
+	public synchronized boolean isLocked()
+	{
+		return locked;
+	}
+	
+	/**
+	 * Check is the thread interrupted.
+	 * 
+	 * @return is interrupted
+	 */
+	public synchronized boolean isInterrupted()
+	{
+		return interrupted;
+	}
+	
+	/**
+	 * Interrupt (finish) the thread.
+	 */
+	public synchronized void interrupt()
+	{
+		interrupted = true;
 	}
 }
