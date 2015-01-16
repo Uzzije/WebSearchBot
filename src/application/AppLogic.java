@@ -81,12 +81,12 @@ public class AppLogic
 			for (int i = 0; i < threads.length; i++) {
 				threads[i] = new BotThread(urlPool);
 				threads[i].setDaemon(true);
+				
+				System.out.println(threads[i].getName() + " created");
 			}
 			
 			for (BotThread thread : threads) {
 				thread.start();
-				
-				System.out.println(thread.getName() + " started");
 			}
 	
 			current = 0;
@@ -111,13 +111,13 @@ public class AppLogic
 				waitingThreads = 0;
 			}
 			
-			if (waitingThreads == App.getFrame().getThreadsNumber()) {
+			if (waitingThreads == threads.length) {
 				state = STOPPED;
 				
 				break;
 			}
 			
-			if (current + 1 == App.getFrame().getThreadsNumber()) {
+			if (current + 1 == threads.length) {
 				current = 0;
 			} else {
 				current++;
@@ -180,10 +180,10 @@ public class AppLogic
 	{
 		pauseTime = System.currentTimeMillis();
 		
-		for (BotThread thread : threads) {
-			thread.suspend();
-			
-			System.out.println(thread.getName() + " paused");
+		synchronized (this) {
+			for (BotThread thread : threads) {
+				thread.pause();
+			}
 		}
 	}
 	
@@ -242,7 +242,10 @@ public class AppLogic
 	public void resume()
 	{
 		for (BotThread thread : threads) {
-			thread.resume();
+			synchronized (thread) {
+				thread.unpause();
+				thread.notify();
+			}
 		}
 		
 		pausedTime += System.currentTimeMillis() - pauseTime;
@@ -291,7 +294,9 @@ public class AppLogic
 		for (int i = 0; i < threads.length; i++) {
 			if (Thread.State.WAITING == threads[i].getState()) {
 				synchronized (threads[i]) {
-					threads[i].notify();
+					if (!threads[i].isPaused()) {
+						threads[i].notify();
+					}
 				}
 				
 				amount--;

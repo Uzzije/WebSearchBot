@@ -13,11 +13,17 @@ public class BotThread extends Thread
 	private UrlPool urlPool;
 	
 	/**
+	 * Should the thread be paused?
+	 */
+	private boolean paused;
+	
+	/**
 	 * Class constructor.
 	 */
 	public BotThread(UrlPool urlPool)
 	{
 		this.urlPool = urlPool;
+		this.paused = false;
 	}
 	
 	/**
@@ -45,6 +51,22 @@ public class BotThread extends Thread
 				}
 
 				url = urlPool.getNextUrlToCheck();
+			}
+			
+			if (isPaused()) {
+				System.out.println(getName() + " paused");
+				
+				synchronized (this) {
+					try {
+						wait();
+					} catch (InterruptedException e) {
+						System.out.println(getName() + " interrupted on pause");
+						
+						return;
+					}
+				}
+
+				System.out.println(getName() + " unpaused");
 			}
 
 			// Lock the URL as being checked (still processing)
@@ -79,5 +101,29 @@ public class BotThread extends Thread
 		}
 		
 		System.out.println(getName() + " interrupted after the main thread method");
+	}
+	
+	/**
+	 * Check if the thread is paused.
+	 */
+	public synchronized boolean isPaused()
+	{
+		return paused;
+	}
+	
+	/**
+	 * Pause the thread.
+	 */
+	public synchronized void pause()
+	{
+		paused = true;
+	}
+	
+	/**
+	 * Unpause the thread.
+	 */
+	public synchronized void unpause()
+	{
+		paused = false;
 	}
 }
