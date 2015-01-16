@@ -69,9 +69,6 @@ public class BotThread extends Thread
 				System.out.println(getName() + " unpaused");
 			}
 
-			// Lock the URL as being checked (still processing)
-			urlPool.markUrlAsChecked(url);
-
 			System.out.println(getName() + " accessing " + url);
 
 			String content = Helpers.getUrlContents(url);
@@ -80,8 +77,6 @@ public class BotThread extends Thread
 			if (isInterrupted()) {
 				System.out.println(getName() + " interrupted after accesing an URL");
 				
-				urlPool.unmarkUrlAsChecked(url);
-				
 				return;
 			}
 		
@@ -89,6 +84,8 @@ public class BotThread extends Thread
 			if (content.contains(App.getFrame().getKeyword())) {
 				urlPool.addUrlAssFound(url);
 			}
+			
+			urlPool.markUrlAsChecked(url);
 
 			ArrayList<String> urlsInContent = Helpers.getAllUrlsInString(content);
 			

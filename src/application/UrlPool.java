@@ -19,6 +19,11 @@ public class UrlPool
 	private ArrayList<String> foundUrls;
 	
 	/**
+	 * URL of currently processing addresses.
+	 */
+	private ArrayList<String> processingUrls;
+	
+	/**
 	 * URL queue to add new found links and take the links for BotThead.
 	 */
 	private LinkedList<String> urlQueue;
@@ -30,6 +35,7 @@ public class UrlPool
 	{
 		checkedUrls = new ArrayList<>();
 		foundUrls = new ArrayList<>();
+		processingUrls = new ArrayList<>();
 		urlQueue = new LinkedList<>();
 	}
 	
@@ -40,7 +46,13 @@ public class UrlPool
 	 */
 	public synchronized String getNextUrlToCheck()
 	{
-		return urlQueue.pollFirst();
+		String url = urlQueue.pollFirst();
+		
+		if (null != url) {
+			processingUrls.add(url);
+		}
+		
+		return url;
 	}
 	
 	/**
@@ -50,7 +62,7 @@ public class UrlPool
 	 */
 	public synchronized void addUrlToCheck(String url)
 	{
-		if (false == checkedUrls.contains(url) && false == urlQueue.contains(url)) {
+		if (!checkedUrls.contains(url) && !urlQueue.contains(url) && !processingUrls.contains(url)) {
 			urlQueue.addLast(url);
 		}
 	}
@@ -89,6 +101,9 @@ public class UrlPool
 	public synchronized void markUrlAsChecked(String url) {
 		if (false == checkedUrls.contains(url)) {
 			checkedUrls.add(url);
+			processingUrls.remove(url);
+		} else {
+			System.out.println("Trying to add URL to checked list, but it is already there.");
 		}
 	}
 	
