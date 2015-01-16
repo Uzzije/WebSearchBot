@@ -48,7 +48,7 @@ public class UrlPool
 	 * 
 	 * @param url to add
 	 */
-	public void addUrlToCheck(String url)
+	public synchronized void addUrlToCheck(String url)
 	{
 		if (false == checkedUrls.contains(url) && false == urlQueue.contains(url)) {
 			urlQueue.addLast(url);
@@ -72,7 +72,7 @@ public class UrlPool
 	 * 
 	 * @param url to add
 	 */
-	public void addUrlAssFound(String url)
+	public synchronized void addUrlAssFound(String url)
 	{
 		if (false == foundUrls.contains(url)) {
 			foundUrls.add(url);
@@ -97,7 +97,7 @@ public class UrlPool
 	 * 
 	 * @param url to mark
 	 */
-	public void unmarkUrlAsChecked(String url) {
+	public synchronized void unmarkUrlAsChecked(String url) {
 		if (checkedUrls.contains(url)) {
 			checkedUrls.remove(url);
 		}
@@ -108,7 +108,7 @@ public class UrlPool
 	 * 
 	 * @return total checked
 	 */
-	public int getTotalCheckedUrl()
+	public synchronized int getTotalCheckedUrl()
 	{
 		return checkedUrls.size();
 	}
@@ -118,7 +118,7 @@ public class UrlPool
 	 * 
 	 * @return total found
 	 */
-	public int getTotalFoundUrl()
+	public synchronized int getTotalFoundUrl()
 	{
 		return foundUrls.size();
 	}
@@ -128,7 +128,7 @@ public class UrlPool
 	 * 
 	 * @return found URLs
 	 */
-	public ArrayList<String> getFoundUrls()
+	public synchronized ArrayList<String> getFoundUrls()
 	{
 		return foundUrls;
 	}
