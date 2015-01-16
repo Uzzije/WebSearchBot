@@ -37,6 +37,7 @@ public class App
 
     /**
      * Main static method to start the application.
+     * 
      * @param args parameters passed to the program
      */
     public static void main(String[] args)

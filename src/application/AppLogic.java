@@ -105,7 +105,7 @@ public class AppLogic
 				break;
 			}
 			
-			if (threads[current].isLocked()) {
+			if (Thread.State.WAITING == threads[current].getState()) {
 				waitingThreads++;
 			} else {
 				waitingThreads = 0;
@@ -282,14 +282,18 @@ public class AppLogic
 	}
 	
 	/**
-	 * Unlock next waiting threads.
+	 * Notify next waiting threads.
 	 * 
-	 * @param amount of threads to unlock
+	 * @param amount of threads to notify
 	 */
-	public synchronized void unlock(int amount)
+	public void notify(int amount)
 	{
 		for (int i = 0; i < threads.length; i++) {
-			if (threads[i].unlock()) {
+			if (Thread.State.WAITING == threads[i].getState()) {
+				synchronized (threads[i]) {
+					threads[i].notify();
+				}
+				
 				amount--;
 			}
 

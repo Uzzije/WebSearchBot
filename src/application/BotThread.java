@@ -13,16 +13,6 @@ public class BotThread extends Thread
 	private UrlPool urlPool;
 	
 	/**
-	 * Is the the thread locked and should wait.
-	 */
-	private boolean locked = false;
-	
-	/**
-	 * Is the the thread locked and should be finished.
-	 */
-	private boolean interrupted = false;
-	
-	/**
 	 * Class constructor.
 	 */
 	public BotThread(UrlPool urlPool)
@@ -42,16 +32,16 @@ public class BotThread extends Thread
 			
 			// There are no URL to process yet, so let's wait
 			while (null == url) {
-				lock();
-
 				System.out.println(getName() + " waiting for a link");
-					
-				while (isLocked()) {
-					if (isInterrupted()) {
-						System.out.println(getName() + " interrupted on waiting a link");
-						
-						return;
+				
+				try {
+					synchronized (this) {
+						wait();
 					}
+				} catch (InterruptedException e) {
+					System.out.println(getName() + " interrupted on waiting a link");
+					
+					return;
 				}
 
 				url = urlPool.getNextUrlToCheck();
@@ -63,17 +53,6 @@ public class BotThread extends Thread
 			System.out.println(getName() + " accessing " + url);
 
 			String content = Helpers.getUrlContents(url);
-			
-			// Check if the thread was not locked
-			while (isLocked()) {
-				if (isInterrupted()) {
-					System.out.println(getName() + " interrupted after accesing an URL and being locked");
-					
-					urlPool.unmarkUrlAsChecked(url);
-					
-					return;
-				}
-			}
 			
 			// Check if the thread stopped (interrupted)
 			if (isInterrupted()) {
@@ -95,70 +74,10 @@ public class BotThread extends Thread
 				urlPool.addUrlToCheck(Helpers.getAllUrlsInString(content));
 				
 				// Notify and unlock threads that there are new URLs to process
-				App.getLogic().unlock(urlsInContent.size());
+				App.getLogic().notify(urlsInContent.size());
 			}
 		}
 		
 		System.out.println(getName() + " interrupted after the main thread method");
-	}
-	
-	/**
-	 * Lock the thread.
-	 * 
-	 * @return if the lock status changed
-	 */
-	public synchronized boolean lock()
-	{
-		if (!locked) {
-			locked = true;
-			
-			return true;
-		}
-		
-		return false;
-	}
-	
-	/**
-	 * Unlock the thread.
-	 * 
-	 * @return if the lock status changed
-	 */
-	public synchronized boolean unlock()
-	{
-		if (locked) {
-			locked = false;
-			
-			return true;
-		}
-		
-		return false;
-	}
-	
-	/**
-	 * Check is the thread locked.
-	 * 
-	 * @return is locked
-	 */
-	public synchronized boolean isLocked()
-	{
-		return locked;
-	}
-	
-	/**
-	 * Check is the thread interrupted.
-	 * 
-	 * @return is interrupted
-	 */
-	public synchronized boolean isInterrupted()
-	{
-		return interrupted;
-	}
-	
-	/**
-	 * Interrupt (finish) the thread.
-	 */
-	public synchronized void interrupt()
-	{
-		interrupted = true;
 	}
 }
