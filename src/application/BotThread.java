@@ -13,17 +13,11 @@ public class BotThread extends Thread
 	private UrlPool urlPool;
 	
 	/**
-	 * Should the thread be paused?
-	 */
-	private boolean paused;
-	
-	/**
 	 * Class constructor.
 	 */
 	public BotThread(UrlPool urlPool)
 	{
 		this.urlPool = urlPool;
-		this.paused = false;
 	}
 	
 	/**
@@ -34,39 +28,14 @@ public class BotThread extends Thread
 		// Do while the thread is not interrupted
 		while (!isInterrupted()) {
 			
-			String url = urlPool.getNextUrlToCheck();
+			String url;
 			
-			// There are no URL to process yet, so let's wait
-			while (null == url) {
-				System.out.println(getName() + " waiting for a link");
-				
-				try {
-					synchronized (this) {
-						wait();
-					}
-				} catch (InterruptedException e) {
-					System.out.println(getName() + " interrupted on waiting a link");
-					
-					return;
-				}
-
+			try {
 				url = urlPool.getNextUrlToCheck();
-			}
-			
-			if (isPaused()) {
-				System.out.println(getName() + " paused");
+			} catch (InterruptedException e1) {
+				System.out.println(getName() + " interrupted on waiting a link");
 				
-				synchronized (this) {
-					try {
-						wait();
-					} catch (InterruptedException e) {
-						System.out.println(getName() + " interrupted on pause");
-						
-						return;
-					}
-				}
-
-				System.out.println(getName() + " unpaused");
+				return;
 			}
 
 			System.out.println(getName() + " accessing " + url);
@@ -82,7 +51,7 @@ public class BotThread extends Thread
 		
 			// Does the page contain the keyword?
 			if (content.contains(App.getFrame().getKeyword())) {
-				urlPool.addUrlAssFound(url);
+				urlPool.markUrlAssFound(url);
 			}
 			
 			urlPool.markUrlAsChecked(url);
@@ -91,36 +60,9 @@ public class BotThread extends Thread
 			
 			if (0 < urlsInContent.size()) {
 				urlPool.addUrlToCheck(Helpers.getAllUrlsInString(content));
-				
-				// Notify and unlock threads that there are new URLs to process
-				App.getLogic().notify(urlsInContent.size());
 			}
 		}
 		
 		System.out.println(getName() + " interrupted after the main thread method");
-	}
-	
-	/**
-	 * Check if the thread is paused.
-	 */
-	public synchronized boolean isPaused()
-	{
-		return paused;
-	}
-	
-	/**
-	 * Pause the thread.
-	 */
-	public synchronized void pause()
-	{
-		paused = true;
-	}
-	
-	/**
-	 * Unpause the thread.
-	 */
-	public synchronized void unpause()
-	{
-		paused = false;
 	}
 }

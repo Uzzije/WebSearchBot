@@ -148,7 +148,7 @@ public class AppLogic
 
 			pauseAllThreads();
 		} else {
-			System.out.println("Main logic loop has state " + " instead of STOPPED or PAUSED");
+			System.out.println("Main logic loop has unknown state instead of STOPPED or PAUSED");
 		}
 	}
 	
@@ -166,6 +166,9 @@ public class AppLogic
 	 */
 	private void stopAllThreads()
 	{
+		// For keeping references because it may be changed after start button is pressed
+		BotThread[] threads = this.threads;
+		
 		for (BotThread thread : threads) {
 			thread.interrupt();
 			
@@ -180,11 +183,7 @@ public class AppLogic
 	{
 		pauseTime = System.currentTimeMillis();
 		
-		synchronized (this) {
-			for (BotThread thread : threads) {
-				thread.pause();
-			}
-		}
+		urlPool.pauseProviding();
 	}
 	
 	/**
@@ -233,6 +232,10 @@ public class AppLogic
 	 */
 	public void stop()
 	{
+		if (PAUSED == state) {
+			stopAllThreads();
+		}
+		
 		state = STOPPED;
 	}
 	
@@ -241,12 +244,7 @@ public class AppLogic
 	 */
 	public void resume()
 	{
-		for (BotThread thread : threads) {
-			synchronized (thread) {
-				thread.unpause();
-				thread.notify();
-			}
-		}
+		urlPool.resumeProviding();
 		
 		pausedTime += System.currentTimeMillis() - pauseTime;
 		
@@ -281,30 +279,6 @@ public class AppLogic
 			App.getFrame().log("Info: Saved in " + file.getAbsolutePath());
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
-		}
-	}
-	
-	/**
-	 * Notify next waiting threads.
-	 * 
-	 * @param amount of threads to notify
-	 */
-	public void notify(int amount)
-	{
-		for (int i = 0; i < threads.length; i++) {
-			if (Thread.State.WAITING == threads[i].getState()) {
-				synchronized (threads[i]) {
-					if (!threads[i].isPaused()) {
-						threads[i].notify();
-					}
-				}
-				
-				amount--;
-			}
-
-			if (0 == amount) {
-				break;
-			}
 		}
 	}
 }
