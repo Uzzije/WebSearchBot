@@ -2,6 +2,7 @@ package application;
 
 import java.util.ArrayList;
 import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
 
 /**
  * Thread to process the URL fetching.
@@ -14,6 +15,11 @@ public class BotThread extends Thread
 	private UrlPool urlPool;
 	
 	/**
+	 * A lock to control threads.
+	 */
+	private Lock lock;
+	
+	/**
 	 * Threads are not paused condition.
 	 */
 	private Condition notPaused;
@@ -21,9 +27,10 @@ public class BotThread extends Thread
 	/**
 	 * Class constructor.
 	 */
-	public BotThread(UrlPool urlPool, Condition notPaused)
+	public BotThread(UrlPool urlPool, Lock lock, Condition notPaused)
 	{
 		this.urlPool = urlPool;
+		this.lock = lock;
 		this.notPaused = notPaused;
 	}
 	
@@ -45,14 +52,12 @@ public class BotThread extends Thread
 				return;
 			}
 			
-			while (App.getLogic().isPaused()) {
-				try {
-					notPaused.await();
-				} catch (InterruptedException e) {
-					System.out.println(getName() + " interrupted on pause");
-					
-					return;
-				}
+			try {
+				checkIfPause();
+			} catch (InterruptedException e) {
+				System.out.println(getName() + " interrupted on pause");
+				
+				return;
 			}
 
 			System.out.println(getName() + " accessing " + url);
@@ -66,14 +71,12 @@ public class BotThread extends Thread
 				return;
 			}
 			
-			while (App.getLogic().isPaused()) {
-				try {
-					notPaused.await();
-				} catch (InterruptedException e) {
-					System.out.println(getName() + " interrupted on pause");
-					
-					return;
-				}
+			try {
+				checkIfPause();
+			} catch (InterruptedException e) {
+				System.out.println(getName() + " interrupted on pause");
+				
+				return;
 			}
 		
 			// Does the page contain the keyword?
@@ -91,5 +94,24 @@ public class BotThread extends Thread
 		}
 		
 		System.out.println(getName() + " interrupted after the main thread method");
+	}
+	
+	/**
+	 * Checks if the thread was paused.
+	 * 
+	 * @throws InterruptedException 
+	 */
+	private void checkIfPause() throws InterruptedException
+	{
+		while (App.getLogic().isPaused()) {
+			lock.lock();
+			
+			try {
+				notPaused.await();
+
+			} finally {
+				lock.unlock();
+			}
+		}
 	}
 }

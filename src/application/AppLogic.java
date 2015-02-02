@@ -102,7 +102,7 @@ public class AppLogic
 			notPaused = lock.newCondition();
 			
 			for (int i = 0; i < threads.length; i++) {
-				threads[i] = new BotThread(urlPool, notPaused);
+				threads[i] = new BotThread(urlPool, lock, notPaused);
 				threads[i].setDaemon(true);
 				
 				System.out.println(threads[i].getName() + " created");
@@ -149,7 +149,7 @@ public class AppLogic
 		
 		// Check is it stopped or paused
 		if (STOPPED == state) {
-			System.out.println("Called STOP command.");
+			System.out.println("Stoppping.");
 			
 			App.getFrame().setButtonEnabled(AppFrame.BUTTON_START, true);
 			App.getFrame().setButtonEnabled(AppFrame.BUTTON_RESUME, false);
@@ -158,18 +158,13 @@ public class AppLogic
 			App.getFrame().setButtonEnabled(AppFrame.BUTTON_SAVE_RESULT, true);
 			
 			App.getFrame().setStatus("Search finished or stopped");
-
-			// For keeping references because it may be changed after start button is pressed
-			BotThread[] threads = this.threads;
 			
-			for (BotThread thread : threads) {
-				thread.interrupt();
-				
-				System.out.println(thread.getName() + " stopped");
-			}
+			stopAllThreads();
 			
 			App.getFrame().log("Info: Search is finished\n\n" + getFormatedResult() + "\n");
 		} else if (PAUSED == state) {
+			System.out.println("Pausing.");
+			
 			App.getFrame().setButtonEnabled(AppFrame.BUTTON_START, false);
 			App.getFrame().setButtonEnabled(AppFrame.BUTTON_RESUME, true);
 			App.getFrame().setButtonEnabled(AppFrame.BUTTON_PAUSE, false);
@@ -179,6 +174,21 @@ public class AppLogic
 			pauseTime = System.currentTimeMillis();
 		} else {
 			System.out.println("Main logic loop has unknown state instead of STOPPED or PAUSED");
+		}
+	}
+	
+	/**
+	 * Stop all threads (interrupt).
+	 */
+	public void stopAllThreads()
+	{
+		// For keeping references because it may be changed after start button is pressed
+		BotThread[] threads = this.threads;
+		
+		for (BotThread thread : threads) {
+			thread.interrupt();
+			
+			System.out.println(thread.getName() + " stopped");
 		}
 	}
 	
@@ -240,6 +250,8 @@ public class AppLogic
 	public void stop()
 	{
 		state = STOPPED;
+		
+		stopAllThreads();
 	}
 	
 	/**
@@ -247,7 +259,13 @@ public class AppLogic
 	 */
 	public void resume()
 	{
-		notPaused.signalAll();
+		try {
+			lock.lock();
+			
+			notPaused.signalAll();
+		} finally {
+			lock.unlock();
+		}
 		
 		pausedTime += System.currentTimeMillis() - pauseTime;
 		
