@@ -2,6 +2,8 @@ package application;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
 
 /**
  * The main class to store and provide the URLs for the bot.
@@ -29,28 +31,51 @@ public class UrlPool
 	private LinkedList<String> urlQueue;
 	
 	/**
+	 * A lock to control threads working with UrlPool.
+	 */
+	private Lock lock;
+
+	/**
+	 * A condition to define an empty URL pool.
+	 */
+	private Condition notEmpty;
+	
+	/**
 	 * Class constructor.
 	 */
-	public UrlPool()
+	public UrlPool(Lock lock)
 	{
 		checkedUrls = new ArrayList<>();
 		foundUrls = new ArrayList<>();
 		processingUrls = new ArrayList<>();
 		urlQueue = new LinkedList<>();
+		
+		this.lock = lock;
+		notEmpty = lock.newCondition();
 	}
 	
 	/**
 	 * Get next URL to check.
 	 * 
 	 * @return the next URL to check or null in case of empty queue
+	 * @throws InterruptedException 
 	 */
-	public synchronized String getNextUrlToCheck()
+	public String getNextUrlToCheck() throws InterruptedException
 	{
+		lock.lock();
+		
 		String url = urlQueue.pollFirst();
 		
-		if (null != url) {
-			processingUrls.add(url);
+		while (null == url) {
+			
+			notEmpty.await();
+			
+			url = urlQueue.pollFirst();
 		}
+		
+		processingUrls.add(url);
+		
+		lock.unlock();
 		
 		return url;
 	}
@@ -60,11 +85,17 @@ public class UrlPool
 	 * 
 	 * @param url to add
 	 */
-	public synchronized void addUrlToCheck(String url)
+	public void addUrlToCheck(String url)
 	{
+		lock.lock();
+		
 		if (!checkedUrls.contains(url) && !urlQueue.contains(url) && !processingUrls.contains(url)) {
 			urlQueue.addLast(url);
+			
+			notEmpty.signal();
 		}
+		
+		lock.unlock();
 	}
 	
 	/**
@@ -72,7 +103,7 @@ public class UrlPool
 	 * 
 	 * @param urls list to add
 	 */
-	public synchronized void addUrlToCheck(ArrayList<String> urls)
+	public void addUrlToCheck(ArrayList<String> urls)
 	{
 		for (String url : urls) {
 			addUrlToCheck(url);
@@ -84,13 +115,17 @@ public class UrlPool
 	 * 
 	 * @param url to add
 	 */
-	public synchronized void addUrlAssFound(String url)
+	public void markUrlAssFound(String url)
 	{
+		lock.lock();
+		
 		if (false == foundUrls.contains(url)) {
 			foundUrls.add(url);
 		} else {
-			System.out.println("Trying to add URL to found list, but it is already there.");
+			System.out.println("-------> Trying to add URL to found list, but it is already there.");
 		}
+		
+		lock.unlock();
 	}
 	
 	/**
@@ -98,24 +133,18 @@ public class UrlPool
 	 * 
 	 * @param url to mark
 	 */
-	public synchronized void markUrlAsChecked(String url) {
+	public void markUrlAsChecked(String url)
+	{
+		lock.lock();
+		
 		if (false == checkedUrls.contains(url)) {
 			checkedUrls.add(url);
 			processingUrls.remove(url);
 		} else {
-			System.out.println("Trying to add URL to checked list, but it is already there.");
+			System.out.println("-------> Trying to add URL to checked list, but it is already there.");
 		}
-	}
-	
-	/**
-	 * Unmark URL as checked.
-	 * 
-	 * @param url to mark
-	 */
-	public synchronized void unmarkUrlAsChecked(String url) {
-		if (checkedUrls.contains(url)) {
-			checkedUrls.remove(url);
-		}
+		
+		lock.unlock();
 	}
 	
 	/**
@@ -123,7 +152,7 @@ public class UrlPool
 	 * 
 	 * @return total checked
 	 */
-	public synchronized int getTotalCheckedUrl()
+	public int getTotalCheckedUrl()
 	{
 		return checkedUrls.size();
 	}
@@ -133,7 +162,7 @@ public class UrlPool
 	 * 
 	 * @return total found
 	 */
-	public synchronized int getTotalFoundUrl()
+	public int getTotalFoundUrl()
 	{
 		return foundUrls.size();
 	}
@@ -143,7 +172,7 @@ public class UrlPool
 	 * 
 	 * @return found URLs
 	 */
-	public synchronized ArrayList<String> getFoundUrls()
+	public ArrayList<String> getFoundUrls()
 	{
 		return foundUrls;
 	}
