@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * The main class to store and provide the URLs for the bot.
@@ -34,38 +33,25 @@ public class UrlPool
 	/**
 	 * A lock to control threads working with UrlPool.
 	 */
-	private final Lock lock;
+	private Lock lock;
 
 	/**
 	 * A condition to define an empty URL pool.
 	 */
-	private final Condition notEmpty;
-	
-	/**
-	 * A condition to defined a paused URL providing.
-	 */
-	private final Condition notPaused;
-	
-	/**
-	 * A flag to pause URL providing and to lock a tread.
-	 */
-	private boolean paused;
+	private Condition notEmpty;
 	
 	/**
 	 * Class constructor.
 	 */
-	public UrlPool()
+	public UrlPool(Lock lock)
 	{
 		checkedUrls = new ArrayList<>();
 		foundUrls = new ArrayList<>();
 		processingUrls = new ArrayList<>();
 		urlQueue = new LinkedList<>();
 		
-		lock = new ReentrantLock();
-		notPaused  = lock.newCondition();
+		this.lock = lock;
 		notEmpty = lock.newCondition();
-		
-		paused = false;
 	}
 	
 	/**
@@ -87,9 +73,7 @@ public class UrlPool
 			url = urlQueue.pollFirst();
 		}
 		
-//		if (paused) {
-//			notPaused.await();
-//		}
+		processingUrls.add(url);
 		
 		lock.unlock();
 		
@@ -191,31 +175,5 @@ public class UrlPool
 	public ArrayList<String> getFoundUrls()
 	{
 		return foundUrls;
-	}
-	
-	/**
-	 * Pause URL providing.
-	 */
-	public void pauseProviding()
-	{
-		lock.lock();
-		
-		paused = true;
-
-		lock.unlock();
-	}
-	
-	/**
-	 * Resume URL providing.
-	 */
-	public void resumeProviding()
-	{
-		lock.lock();
-		
-		paused = false;
-		
-		notPaused.signalAll();
-
-		lock.unlock();
 	}
 }

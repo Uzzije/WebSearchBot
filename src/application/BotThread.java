@@ -1,6 +1,7 @@
 package application;
 
 import java.util.ArrayList;
+import java.util.concurrent.locks.Condition;
 
 /**
  * Thread to process the URL fetching.
@@ -13,11 +14,17 @@ public class BotThread extends Thread
 	private UrlPool urlPool;
 	
 	/**
+	 * Threads are not paused condition.
+	 */
+	private Condition notPaused;
+	
+	/**
 	 * Class constructor.
 	 */
-	public BotThread(UrlPool urlPool)
+	public BotThread(UrlPool urlPool, Condition notPaused)
 	{
 		this.urlPool = urlPool;
+		this.notPaused = notPaused;
 	}
 	
 	/**
@@ -37,6 +44,16 @@ public class BotThread extends Thread
 				
 				return;
 			}
+			
+			while (App.getLogic().isPaused()) {
+				try {
+					notPaused.await();
+				} catch (InterruptedException e) {
+					System.out.println(getName() + " interrupted on pause");
+					
+					return;
+				}
+			}
 
 			System.out.println(getName() + " accessing " + url);
 
@@ -47,6 +64,16 @@ public class BotThread extends Thread
 				System.out.println(getName() + " interrupted after accesing an URL");
 				
 				return;
+			}
+			
+			while (App.getLogic().isPaused()) {
+				try {
+					notPaused.await();
+				} catch (InterruptedException e) {
+					System.out.println(getName() + " interrupted on pause");
+					
+					return;
+				}
 			}
 		
 			// Does the page contain the keyword?
